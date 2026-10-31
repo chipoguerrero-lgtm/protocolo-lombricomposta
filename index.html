@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Protocolo Lombricomposta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F6F6F1; --surface:#FFFFFF; --surface-2:#EDEEE6;
+  --ink:#1C201B; --ink-2:#4C5348; --ink-3:#7D8578;
+  --rule:#DCDDD3; --rule-strong:#C3C6B8;
+  --accent:#46603C; --accent-2:#6E8C58;
+  --st-done-fg:#3C5633; --st-done-bg:#E1EAD9;
+  --st-part-fg:#7A5F16; --st-part-bg:#F2E8CC;
+  --st-todo-fg:#8A3D2C; --st-todo-bg:#F4DFD8;
+  --check:#46603C;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#171A16; --surface:#1E221C; --surface-2:#262B23;
+    --ink:#E9EBE3; --ink-2:#B2B8AA; --ink-3:#848C7C;
+    --rule:#333A2F; --rule-strong:#454E40;
+    --accent:#9AB983; --accent-2:#7E9C68;
+    --st-done-fg:#AECB94; --st-done-bg:#28331F;
+    --st-part-fg:#DCC078; --st-part-bg:#38311D;
+    --st-todo-fg:#DD9C83; --st-todo-bg:#3A251E;
+    --check:#9AB983;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#171A16; --surface:#1E221C; --surface-2:#262B23;
+  --ink:#E9EBE3; --ink-2:#B2B8AA; --ink-3:#848C7C;
+  --rule:#333A2F; --rule-strong:#454E40;
+  --accent:#9AB983; --accent-2:#7E9C68;
+  --st-done-fg:#AECB94; --st-done-bg:#28331F;
+  --st-part-fg:#DCC078; --st-part-bg:#38311D;
+  --st-todo-fg:#DD9C83; --st-todo-bg:#3A251E;
+  --check:#9AB983;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;font-size:16px;line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px 96px}
+
+/* ---------- progress bar ---------- */
+.progbar{position:sticky;top:0;z-index:50;background:var(--ground);
+  border-bottom:1px solid var(--rule-strong);padding:10px 0 9px;margin-bottom:0}
+.progbar .inner{max-width:1000px;margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.progbar .lbl{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.track{flex:1 1 180px;height:6px;background:var(--surface-2);border:1px solid var(--rule);
+  border-radius:3px;overflow:hidden;min-width:120px}
+.fill{height:100%;width:0%;background:var(--accent);transition:width .35s ease}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+.pct{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;
+  font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap;min-width:5.5em}
+.resetbtn{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);background:transparent;
+  border:1px solid var(--rule);border-radius:2px;padding:4px 9px;cursor:pointer}
+.resetbtn:hover{color:var(--ink);border-color:var(--rule-strong)}
+
+/* ---------- header ---------- */
+.masthead{padding:46px 0 26px;border-bottom:1px solid var(--rule-strong);
+  display:flex;flex-direction:column;gap:16px}
+.kicker{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+h1{font-family:Petrona,Georgia,serif;font-weight:600;font-size:clamp(2rem,5.2vw,3.05rem);
+  line-height:1.08;letter-spacing:-.015em;margin:0;text-wrap:balance}
+h1 em{font-style:italic;color:var(--accent);font-weight:500}
+.standfirst{font-family:Petrona,Georgia,serif;font-size:1.16rem;line-height:1.55;
+  color:var(--ink-2);max-width:62ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px 26px;font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;letter-spacing:.05em;color:var(--ink-3);padding-top:4px}
+.meta b{color:var(--ink-2);font-weight:500}
+
+section{padding-top:52px}
+h2{font-family:Petrona,Georgia,serif;font-weight:600;font-size:1.72rem;line-height:1.2;
+  margin:0 0 6px;letter-spacing:-.01em;text-wrap:balance}
+.sec-note{color:var(--ink-2);max-width:66ch;margin:0 0 24px;font-size:.97rem}
+h3{font-family:Petrona,Georgia,serif;font-weight:600;font-size:1.16rem;margin:0 0 6px;line-height:1.28}
+p{max-width:68ch}
+
+/* ---------- checkbox ---------- */
+.ck{appearance:none;-webkit-appearance:none;flex:0 0 auto;
+  width:15px;height:15px;margin:0;border:1.5px solid var(--rule-strong);border-radius:2px;
+  background:var(--surface);cursor:pointer;position:relative;top:.18em}
+.ck:checked{background:var(--check);border-color:var(--check)}
+.ck:checked::after{content:"";position:absolute;left:3.6px;top:.8px;width:4px;height:8px;
+  border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(42deg)}
+.ck:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- ledger ---------- */
+.ledger-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:3px;background:var(--surface)}
+table.ledger{border-collapse:collapse;width:100%;min-width:680px;font-size:.9rem}
+table.ledger th{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500;font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;
+  padding:12px 16px;border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+table.ledger td{padding:11px 16px;border-bottom:1px solid var(--rule);vertical-align:baseline}
+table.ledger tr:last-child td{border-bottom:none}
+td.ckcell{width:1%;padding-right:0}
+td.num{font-family:"IBM Plex Mono",ui-monospace,monospace;color:var(--ink-3);font-size:.85rem;
+  width:1%;white-space:nowrap}
+td.sec-name{font-weight:500;white-space:nowrap}
+td.pg{font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.85rem;color:var(--ink-2);white-space:nowrap}
+td.what{color:var(--ink-2);min-width:250px}
+tr.total td{background:var(--surface-2);font-weight:500}
+tr.struck td.sec-name,tr.struck td.what{text-decoration:line-through;opacity:.5}
+
+.chip{display:inline-block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px;white-space:nowrap}
+.chip.done{color:var(--st-done-fg);background:var(--st-done-bg)}
+.chip.part{color:var(--st-part-fg);background:var(--st-part-bg)}
+.chip.todo{color:var(--st-todo-fg);background:var(--st-todo-bg)}
+
+/* ---------- nudos ---------- */
+.nudos{display:flex;flex-direction:column;border-top:1px solid var(--rule-strong)}
+.nudo{display:grid;grid-template-columns:62px 1fr;gap:0 20px;padding:20px 0;
+  border-bottom:1px solid var(--rule)}
+.nudo .mark{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;
+  letter-spacing:.1em;color:var(--accent);padding-top:5px}
+.nudo p{margin:0;color:var(--ink-2);font-size:.96rem}
+.nudo p+p{margin-top:8px}
+.nudo h3{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:7px}
+.fix{color:var(--ink);border-left:2px solid var(--accent);padding-left:14px;
+  font-family:Petrona,Georgia,serif;font-size:1.02rem}
+.q{font-family:Petrona,Georgia,serif;font-style:italic;color:var(--ink)}
+
+/* ---------- entries ---------- */
+.entry{display:grid;grid-template-columns:62px 1fr;gap:0 20px;padding:24px 0;
+  border-bottom:1px solid var(--rule)}
+.entry:first-of-type{border-top:1px solid var(--rule-strong)}
+.entry .idx{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:1.3rem;font-weight:500;
+  color:var(--rule-strong);line-height:1.1;padding-top:2px;font-variant-numeric:tabular-nums}
+.entry-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:10px}
+.entry-head .pgs{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;
+  color:var(--ink-3);letter-spacing:.05em}
+.entry-head .mini{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;
+  color:var(--ink-3);font-variant-numeric:tabular-nums}
+ul.todo{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
+ul.todo li{display:flex;gap:11px;align-items:flex-start;color:var(--ink-2);font-size:.95rem;max-width:70ch}
+ul.todo li>span{flex:1 1 auto}
+ul.todo li b{color:var(--ink);font-weight:600}
+ul.todo li.off>span{text-decoration:line-through;opacity:.45}
+.srcline{margin-top:12px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.06em;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
+.srcline span.lbl{text-transform:uppercase;letter-spacing:.12em}
+.tag{background:var(--surface-2);border:1px solid var(--rule);padding:2px 7px;border-radius:2px;color:var(--ink-2)}
+
+/* ---------- hallazgos ---------- */
+.finds{display:flex;flex-direction:column;gap:16px}
+.find{background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:7px}
+.find.warn{border-left:3px solid var(--st-todo-fg)}
+.find.ok{border-left:3px solid var(--accent)}
+.find .fname{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;
+  color:var(--ink-3);word-break:break-word}
+.find p{margin:0;font-size:.95rem;color:var(--ink-2)}
+.find strong{color:var(--ink)}
+
+/* ---------- índice ---------- */
+.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));gap:20px}
+.toc article{background:var(--surface);border:1px solid var(--rule);border-radius:3px;
+  padding:20px 22px 22px;display:flex;flex-direction:column;gap:10px}
+.toc .cap{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.toc h3{margin:0}
+.toc ol{margin:0;padding-left:1.15em;color:var(--ink-2);font-size:.92rem;
+  display:flex;flex-direction:column;gap:4px}
+
+/* ---------- fuentes ---------- */
+.srcs-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:3px;background:var(--surface)}
+table.srcs{border-collapse:collapse;width:100%;min-width:640px;font-size:.9rem}
+table.srcs th{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500;font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:12px 16px;
+  border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+table.srcs td{padding:11px 16px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink-2)}
+table.srcs tr:last-child td{border-bottom:none}
+table.srcs td.work{color:var(--ink);font-weight:500;min-width:210px}
+table.srcs td.work em{font-weight:400}
+table.srcs td.role{min-width:230px}
+table.srcs td.where{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.82rem;
+  white-space:nowrap;color:var(--ink-3)}
+.gap-row td{background:var(--st-todo-bg)}
+.gap-row td.work{color:var(--st-todo-fg)}
+.new-row td{background:var(--st-done-bg)}
+.new-row td.work{color:var(--st-done-fg)}
+
+/* ---------- orden ---------- */
+ol.plan{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;counter-reset:step}
+ol.plan li{counter-increment:step;display:grid;grid-template-columns:62px 1fr;gap:0 20px;
+  padding:16px 0;border-bottom:1px solid var(--rule)}
+ol.plan li:first-child{border-top:1px solid var(--rule-strong)}
+ol.plan li::before{content:counter(step,decimal-leading-zero);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.1em;
+  color:var(--accent);padding-top:5px}
+ol.plan .step-body{display:flex;gap:11px;align-items:flex-start}
+ol.plan .step-body .txt strong{display:block;font-family:Petrona,Georgia,serif;font-size:1.07rem;
+  font-weight:600;margin-bottom:3px}
+ol.plan .step-body .txt span{color:var(--ink-2);font-size:.94rem}
+ol.plan li.off .txt{text-decoration:line-through;opacity:.45}
+
+footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--rule-strong);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.05em;
+  color:var(--ink-3);display:flex;flex-wrap:wrap;gap:6px 20px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+@media (max-width:640px){
+  .wrap{padding:0 18px 72px}
+  .progbar .inner{padding:0 18px}
+  .entry,.nudo,ol.plan li{grid-template-columns:1fr;gap:8px}
+  .entry .idx{font-size:.95rem}
+  .nudo .mark,ol.plan li::before{padding-top:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="progbar">
+  <div class="inner">
+    <span class="lbl">Avance del protocolo</span>
+    <span class="track"><span class="fill" id="fill"></span></span>
+    <span class="pct" id="pct">0 / 0</span>
+    <button class="resetbtn" id="reset" type="button">Reiniciar</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">Maestría en Filosofía Contemporánea Aplicada · Protocolo de trabajo escrito</div>
+  <h1>La lombricomposta como espacio de <em>resignificación del otro</em></h1>
+  <p class="standfirst">Seguimiento de las doce secciones del formato del protocolo. Las casillas se guardan en el navegador, de modo que el avance se conserva al volver a abrir la página.</p>
+  <div class="meta">
+    <span><b>Sede:</b> Universidad Politécnica de Santa Rosa Jáuregui</span>
+    <span><b>Meta de extensión:</b> 20–22 cuartillas</span>
+    <span><b>Actualizado:</b> 31 de octubre de 2026</span>
+  </div>
+</header>
+
+<section>
+  <h2>Estado de las doce secciones</h2>
+  <p class="sec-note">Cinco secciones están redactadas y seis siguen pendientes. La columna de cuartillas es una estimación calibrada sobre las proporciones del formato.</p>
+
+  <div class="ledger-scroll">
+  <table class="ledger">
+    <thead>
+      <tr><th></th><th>§</th><th>Sección</th><th>Estado</th><th>Cuartillas</th><th>Qué sigue</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-datos"></td><td class="num">—</td><td class="sec-name">Datos y LGAC</td><td><span class="chip todo">Pendiente</span></td><td class="pg">½</td><td class="what">Datos del estudiante, del tutor y línea de generación.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-1" checked></td><td class="num">1</td><td class="sec-name">Título</td><td><span class="chip done">Hecho</span></td><td class="pg">—</td><td class="what">Redactado.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-2"></td><td class="num">2</td><td class="sec-name">Introducción</td><td><span class="chip part">Borrador</span></td><td class="pg">1</td><td class="what">Se integra al final, cuando el resto del protocolo esté cerrado.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-3"></td><td class="num">3</td><td class="sec-name">Antecedentes</td><td><span class="chip part">Parcial</span></td><td class="pg">5–6</td><td class="what">Falta el tercer antecedente nacional, el párrafo de apertura y los cierres argumentativos.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-4" checked></td><td class="num">4</td><td class="sec-name">Justificación</td><td><span class="chip done">Redactada</span></td><td class="pg">1½</td><td class="what">Cuatro párrafos: pertinencia filosófica, educativa, situada y aplicada.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-5" checked></td><td class="num">5</td><td class="sec-name">Hipótesis</td><td><span class="chip done">Redactada</span></td><td class="pg">½</td><td class="what">Incluye su propia condición de fracaso.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-6" checked></td><td class="num">6</td><td class="sec-name">Objetivos</td><td><span class="chip done">Redactados</span></td><td class="pg">½</td><td class="what">Objetivo general y cuatro específicos.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-7" checked></td><td class="num">7</td><td class="sec-name">Aparato conceptual</td><td><span class="chip done">Redactado</span></td><td class="pg">7</td><td class="what">Apartados 7.1 a 7.6 completos, con los cuatro autores y la definición operativa.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-8"></td><td class="num">8</td><td class="sec-name">Metodología</td><td><span class="chip todo">Pendiente</span></td><td class="pg">2</td><td class="what">Enfoque, técnicas, instrumentos, categorías de análisis y consideraciones éticas.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-9"></td><td class="num">9</td><td class="sec-name">Contenidos mínimos</td><td><span class="chip todo">Pendiente</span></td><td class="pg">1</td><td class="what">Índice capitular tentativo.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-10"></td><td class="num">10</td><td class="sec-name">Estancia profesional</td><td><span class="chip todo">Pendiente</span></td><td class="pg">1</td><td class="what">Sede, secuencia de trabajo, resultados esperados y acuerdo institucional.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-11"></td><td class="num">11</td><td class="sec-name">Cronograma</td><td><span class="chip todo">Pendiente</span></td><td class="pg">½</td><td class="what">Tabla por cuatrimestres, anclada al cuatrimestre de la intervención.</td></tr>
+      <tr><td class="ckcell"><input class="ck" type="checkbox" data-k="s-12"></td><td class="num">12</td><td class="sec-name">Bibliografía</td><td><span class="chip part">Parcial</span></td><td class="pg">2</td><td class="what">Incorporadas las fuentes del aparato conceptual; pendiente el cierre en APA 7.</td></tr>
+      <tr class="total"><td class="ckcell"></td><td class="num"></td><td class="sec-name">Total estimado</td><td></td><td class="pg">20–22</td><td class="what"></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Decisiones del protocolo</h2>
+  <p class="sec-note">Las definiciones de fondo que gobiernan la redacción del resto del documento.</p>
+
+  <div class="nudos">
+    <div class="nudo">
+      <div class="mark">01</div>
+      <div>
+        <h3>El verbo del objetivo general <span class="chip done">Decidido</span></h3>
+        <p>El objetivo general <i>explora</i> las posibilidades del espacio. Se descartó «explotar», que instalaba la misma relación instrumental que el trabajo busca examinar.</p>
+      </div>
+    </div>
+    <div class="nudo">
+      <div class="mark">02</div>
+      <div>
+        <h3>Qué es lo que se resignifica <span class="chip part">En definición</span></h3>
+        <p>El apartado 7.6 sostiene que <b>lo resignificado es la cultura</b> y que la otredad animal es la vía por la cual esa resignificación ocurre. Queda alinear el objetivo general con esa formulación, de modo que título y objetivo digan lo mismo.</p>
+      </div>
+    </div>
+    <div class="nudo">
+      <div class="mark">03</div>
+      <div>
+        <h3>El rostro y el animal <span class="chip done">Decidido</span></h3>
+        <p>Levinas no extiende el rostro al animal, y declara no poder responder si la serpiente lo tiene. El protocolo asume esa negativa con fuente primaria a través de Derrida, quien documenta el límite y señala la brecha abierta a «análisis más específicos». La investigación se instala en esa brecha, y el estatus moral se replantea desde el enfoque relacional.</p>
+      </div>
+    </div>
+    <div class="nudo">
+      <div class="mark">04</div>
+      <div>
+        <h3>La tensión instrumental <span class="chip done">Decidido</span></h3>
+        <p>La lombricomposta es, en su origen, una tecnología de tratamiento de residuos, y en ella el animal aparece como medio de producción. El protocolo sostiene esa ambivalencia en lugar de negarla: la hipótesis incluye la condición bajo la cual la resignificación no ocurre.</p>
+      </div>
+    </div>
+    <div class="nudo">
+      <div class="mark">05</div>
+      <div>
+        <h3>Definición de «resignificación» <span class="chip done">Decidido</span></h3>
+        <p>Definida operativamente en 7.6 como la transformación del marco cultural desde el cual un sujeto atribuye o niega la condición de otro a un viviente no humano, observable en cinco registros.</p>
+      </div>
+    </div>
+    <div class="nudo">
+      <div class="mark">06</div>
+      <div>
+        <h3>Numeración del documento <span class="chip part">Pendiente</span></h3>
+        <p>Adoptar la numeración del formato de principio a fin, de modo que cada sección quede donde la plantilla la espera.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>El aparato conceptual y su función</h2>
+  <p class="sec-note">Cuatro autores, más un complemento pedagógico. El apartado se organiza en torno a un problema y no a una sucesión de autores: se instala el concepto, se lo conduce hasta su límite y se lo repara.</p>
+
+  <div class="srcs-scroll">
+  <table class="srcs">
+    <thead><tr><th>Apartado</th><th>Autor</th><th>Función en el análisis</th></tr></thead>
+    <tbody>
+      <tr><td class="where">7.1</td><td class="work">Emmanuel Levinas</td><td class="role">El rostro como alteridad irreductible, y la relación ética como anterior al conocimiento del otro.</td></tr>
+      <tr><td class="where">7.2</td><td class="work">Jacques Derrida</td><td class="role">El límite de ese concepto ante el animal, la crítica del singular «el Animal» mediante el <em>animot</em>, y la brecha en la que se instala la investigación.</td></tr>
+      <tr><td class="where">7.3</td><td class="work">Mark Coeckelbergh y David Gunkel</td><td class="role">El estatus moral no se descubre en el animal: se constituye en el encuentro, en el lenguaje y en el espacio que ocupa.</td></tr>
+      <tr><td class="where">7.4</td><td class="work">Donna Haraway</td><td class="role">Devenir-con, zonas de contacto y <em>response-ability</em>: el vocabulario para describir la relación en un espacio multiespecie.</td></tr>
+      <tr><td class="where">7.5</td><td class="work">Jean Lave y Étienne Wenger</td><td class="role">Aprendizaje situado y participación periférica legítima: lo que convierte el espacio en un lugar pedagógico y no en un recurso didáctico.</td></tr>
+      <tr><td class="where">7.6</td><td class="work">Definición operativa</td><td class="role">Los cinco registros observables de la resignificación, que serán las categorías de análisis del trabajo de campo.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Los cinco registros de análisis</h2>
+  <p class="sec-note">Derivados del aparato conceptual. Cada uno indica el apartado del que proviene.</p>
+
+  <div class="toc">
+    <article><div class="cap">Registro 1 · 7.1</div><h3>Percepción y afectividad</h3><ol><li>El desplazamiento de una percepción mediada por el asco y la repulsión, a una de atención y de cuidado.</li></ol></article>
+    <article><div class="cap">Registro 2 · 7.2</div><h3>Nominación</h3><ol><li>Si se habla de «las lombrices» en singular general o de este lecho y estas lombrices, con su estado y sus condiciones.</li></ol></article>
+    <article><div class="cap">Registro 3 · 7.3</div><h3>Atribución de estatus</h3><ol><li>Los términos con que se describe lo que la lombriz es, puede y merece, y si invocan propiedades o relación.</li></ol></article>
+    <article><div class="cap">Registro 4 · 7.4</div><h3>Modo de trabajo</h3><ol><li>Si se trabaja sobre el lecho o con él: manejo de un insumo o respuesta a un viviente.</li></ol></article>
+    <article><div class="cap">Registro 5 · 7.5</div><h3>Participación</h3><ol><li>El lugar que se ocupa en la práctica y el desplazamiento de la periferia hacia el centro a lo largo del cuatrimestre.</li></ol></article>
+  </div>
+</section>
+
+<section>
+  <h2>Contenidos por desarrollar</h2>
+  <p class="sec-note">Lo que queda. El contador de arriba se mueve con estas casillas.</p>
+
+  <div class="entry">
+    <div class="idx">03</div>
+    <div>
+      <div class="entry-head"><h3>Antecedentes</h3><span class="chip part">Parcial</span><span class="pgs">≈ 5–6 cuartillas</span></div>
+      <ul class="todo">
+        <li><input class="ck" type="checkbox" data-k="i3a"><span>Párrafo de apertura que delimite qué se entiende por otredad animal y por espacio pedagógico.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i3b"><span>Tercer antecedente nacional.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i3c"><span>Separar los antecedentes empíricos de los filosóficos.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i3d"><span>Cierre argumentativo por antecedente: qué toma el trabajo y dónde se separa.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i3e"><span>Verificar los datos bibliográficos completos de cada estudio citado.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="idx">08</div>
+    <div>
+      <div class="entry-head"><h3>Metodología</h3><span class="chip todo">Pendiente</span><span class="pgs">≈ 2 cuartillas · la siguiente</span></div>
+      <ul class="todo">
+        <li><input class="ck" type="checkbox" data-k="i8a"><span>Declarar el enfoque: cualitativo, fenomenológico-hermenéutico, con investigación documental y trabajo de campo.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i8b"><span>Técnicas: observación participante, diario de campo, textos reflexivos y entrevistas al inicio y al cierre del cuatrimestre.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i8c"><span>Decidir sobre el uso de escalas estandarizadas de actitudes, dado que miden propiedades del animal y el enfoque relacional las impugna.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i8d"><span>Asignar un instrumento de recolección a cada uno de los cinco registros.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i8e"><span>Corpus y participantes: cuántos alumnos, de qué programas, cuántas sesiones, en qué cuatrimestre.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i8f"><span>Consideraciones éticas: consentimiento informado, anonimato y doble rol del investigador.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="idx">10</div>
+    <div>
+      <div class="entry-head"><h3>Estancia profesional</h3><span class="chip todo">Pendiente</span><span class="pgs">≈ 1 cuartilla</span></div>
+      <ul class="todo">
+        <li><input class="ck" type="checkbox" data-k="i10a"><span>Sede y pertinencia: la lombricomposta de la UPSRJ y las asignaturas que se cruzan con el espacio.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i10b"><span>La secuencia: incorporación, jornadas de mantenimiento con registro de temperatura y humedad, bitácora individual, sesiones de discusión filosófica intercaladas y cierre colectivo.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i10c"><span>Resultados esperados, en el plano formativo y en el filosófico.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i10d"><span>Estado del acuerdo institucional.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="idx">09<br>11</div>
+    <div>
+      <div class="entry-head"><h3>Contenidos mínimos y cronograma</h3><span class="chip todo">Pendiente</span><span class="pgs">≈ 1½ cuartillas · dos tablas</span></div>
+      <ul class="todo">
+        <li><input class="ck" type="checkbox" data-k="i9a"><span>Índice capitular en cinco capítulos.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i11a"><span>Cronograma por cuatrimestres, con la columna de campo anclada a un cuatrimestre concreto.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="idx">02<br>12</div>
+    <div>
+      <div class="entry-head"><h3>Introducción y bibliografía</h3><span class="chip part">Al final</span><span class="pgs">≈ 3 cuartillas · APA 7</span></div>
+      <ul class="todo">
+        <li><input class="ck" type="checkbox" data-k="i2a"><span>Integrar la introducción con el periodo lectivo y la lista definitiva de autores del aparato crítico.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i12a"><span>Cierre de la bibliografía en APA 7, entrada por entrada.</span></li>
+        <li><input class="ck" type="checkbox" data-k="i12b"><span>Revisión final de redacción.</span></li>
+      </ul>
+    </div>
+  </div>
+
+</section>
+
+<section>
+  <h2>Índice capitular propuesto</h2>
+  <p class="sec-note">Corresponde a la sección de contenidos mínimos. El capítulo 2 sigue el arco de los cuatro autores.</p>
+
+  <div class="toc">
+    <article><div class="cap">Capítulo 1</div><h3>La lombricomposta como espacio</h3><ol>
+      <li>La UPSRJ: modelo educativo y formación técnica</li>
+      <li>Historia y funcionamiento del espacio</li>
+      <li>Quiénes lo habitan: alumnos, docentes, personal y <i>Eisenia fetida</i></li>
+      <li>De recurso didáctico a espacio pedagógico</li></ol></article>
+    <article><div class="cap">Capítulo 2</div><h3>La otredad animal: del rostro a la relación</h3><ol>
+      <li>Levinas: rostro, alteridad y ética primera</li>
+      <li>Derrida: la mirada del gato y el <i>animot</i></li>
+      <li>Derrida ante Levinas: la serpiente y la brecha</li>
+      <li>Coeckelbergh y Gunkel: el estatus moral relacional</li>
+      <li>Haraway: devenir-con y zonas de contacto</li>
+      <li>Contrapunto: utilitarismo y deontología</li></ol></article>
+    <article><div class="cap">Capítulo 3</div><h3>La lombriz como caso límite</h3><ol>
+      <li>Un otro sin rostro y sin mirada</li>
+      <li>El asco como marco cultural heredado</li>
+      <li>El tacto donde no hay mirada</li>
+      <li>Responder en la brecha: toma de posición</li></ol></article>
+    <article><div class="cap">Capítulo 4</div><h3>Pedagogía de la resignificación</h3><ol>
+      <li>Aprendizaje situado y comunidad de práctica</li>
+      <li>Posthumanismo y educación universitaria</li>
+      <li>La secuencia de trabajo en la lombricomposta</li>
+      <li>Análisis del material de campo</li></ol></article>
+    <article><div class="cap">Capítulo 5</div><h3>Conclusiones</h3><ol>
+      <li>Alcances y límites de la resignificación observada</li>
+      <li>Qué aporta el caso a la teoría relacional del estatus moral</li>
+      <li>Condiciones de replicabilidad en otras universidades</li></ol></article>
+  </div>
+</section>
+
+<section>
+  <h2>Orden de trabajo</h2>
+  <p class="sec-note">Seis pasos. El orden importa: cada uno condiciona la redacción del siguiente.</p>
+
+  <ol class="plan">
+    <li><div class="step-body"><input class="ck" type="checkbox" data-k="p1"><div class="txt"><strong>Alinear objetivo general y título, y renumerar</strong><span>Desbloquea la introducción.</span></div></div></li>
+    <li><div class="step-body"><input class="ck" type="checkbox" data-k="p2"><div class="txt"><strong>Revisión final del aparato conceptual</strong><span>Verificar citas y paginación contra los impresos.</span></div></div></li>
+    <li><div class="step-body"><input class="ck" type="checkbox" data-k="p3"><div class="txt"><strong>Metodología</strong><span>Se deriva de los cinco registros ya fijados.</span></div></div></li>
+    <li><div class="step-body"><input class="ck" type="checkbox" data-k="p4"><div class="txt"><strong>Estancia profesional</strong><span>Va junto con la metodología: es el campo del que ésta toma sus datos.</span></div></div></li>
+    <li><div class="step-body"><input class="ck" type="checkbox" data-k="p5"><div class="txt"><strong>Cerrar antecedentes</strong><span>Apertura, tercer antecedente nacional, separación y cierres.</span></div></div></li>
+    <li><div class="step-body"><input class="ck" type="checkbox" data-k="p6"><div class="txt"><strong>Introducción, contenidos mínimos, cronograma y bibliografía</strong><span>Al final, cuando ya hay qué anunciar y qué listar.</span></div></div></li>
+  </ol>
+</section>
+
+<footer>
+  <span>Seguimiento del protocolo</span>
+  <span>Documento de trabajo en proceso</span>
+  <span>Actualizado el 31 de octubre de 2026</span>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var KEY="protocolo-lombricomposta-pages";
+  var boxes=[].slice.call(document.querySelectorAll(".ck[data-k]"));
+  var fill=document.getElementById("fill"), pct=document.getElementById("pct");
+
+  function load(){
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){ return null; }
+  }
+  function save(){
+    try{
+      var o={};
+      boxes.forEach(function(b){ o[b.dataset.k]=b.checked; });
+      localStorage.setItem(KEY, JSON.stringify(o));
+    }catch(e){ /* navegador sin almacenamiento: el avance vive solo en esta pestaña */ }
+  }
+  function paint(){
+    var done=0;
+    boxes.forEach(function(b){
+      if(b.checked) done++;
+      var li=b.closest("li");
+      if(li) li.classList.toggle("off", b.checked);
+      var tr=b.closest("tr");
+      if(tr) tr.classList.toggle("struck", b.checked);
+    });
+    var total=boxes.length;
+    var p=total?Math.round(done/total*100):0;
+    fill.style.width=p+"%";
+    pct.textContent=done+" / "+total+"  ·  "+p+"%";
+  }
+
+  var stored=load();
+  if(stored){
+    boxes.forEach(function(b){
+      if(Object.prototype.hasOwnProperty.call(stored,b.dataset.k)) b.checked=!!stored[b.dataset.k];
+    });
+  }
+  paint();
+
+  boxes.forEach(function(b){
+    b.addEventListener("change", function(){ paint(); save(); });
+  });
+
+  document.getElementById("reset").addEventListener("click", function(){
+    boxes.forEach(function(b){ b.checked=false; });
+    paint(); save();
+  });
+})();
+</script>
+</body>
+</html>
